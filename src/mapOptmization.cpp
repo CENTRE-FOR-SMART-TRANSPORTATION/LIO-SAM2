@@ -234,12 +234,15 @@ public:
         matP = cv::Mat(6, 6, CV_32F, cv::Scalar::all(0));
     }
 
+        // this is the main key fuction -> publishes frames as well
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
     {
         // extract time stamp
         timeLaserInfoStamp = msgIn->header.stamp;
         timeLaserInfoCur = msgIn->header.stamp.toSec();
 
+        // ROS_INFO("[laserCloudInfoHandler] Received cloud_info at time: %.9f", timeLaserInfoCur);
+        // ROS_INFO("[laserCloudInfoHandler] Frame ID: %s", msgIn->header.frame_id.c_str());
         // extract info and feature cloud
         cloudInfo = *msgIn;
         pcl::fromROSMsg(msgIn->cloud_corner,  *laserCloudCornerLast);
@@ -250,6 +253,7 @@ public:
         static double timeLastProcessing = -1;
         if (timeLaserInfoCur - timeLastProcessing >= mappingProcessInterval)
         {
+            // ROS_INFO("[laserCloudInfoHandler] --- Begin Mapping Step ---");
             timeLastProcessing = timeLaserInfoCur;
 
             updateInitialGuess();
@@ -267,6 +271,9 @@ public:
             publishOdometry();
 
             publishFrames();
+        }
+        else{
+            ROS_INFO("TIME ERROR?: %.9f", timeLaserInfoCur);
         }
     }
 
@@ -1703,15 +1710,18 @@ public:
 
     void publishFrames()
     {
-        if (cloudKeyPoses3D->points.empty())
-            return;
+        if (cloudKeyPoses3D->points.empty()){
+            // ROS_INFO("SOMETHINGS WRONG POINTS EMPTY");
+            return;}
         // publish key poses
+        // ROS_INFO("PUBLISHING CLOUD.1");
         publishCloud(pubKeyPoses, cloudKeyPoses3D, timeLaserInfoStamp, odometryFrame);
         // Publish surrounding key frames
         publishCloud(pubRecentKeyFrames, laserCloudSurfFromMapDS, timeLaserInfoStamp, odometryFrame);
         // publish registered key frame
         if (pubRecentKeyFrame.getNumSubscribers() != 0)
         {
+
             pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
             PointTypePose thisPose6D = trans2PointTypePose(transformTobeMapped);
             *cloudOut += *transformPointCloud(laserCloudCornerLastDS,  &thisPose6D);
@@ -1736,23 +1746,55 @@ public:
         }
         // publish SLAM infomation for 3rd-party usage
         static int lastSLAMInfoPubSize = -1;
+        // ROS_INFO("PUBLISHING SLAM");
         if (pubSLAMInfo.getNumSubscribers() != 0)
         {
             if (lastSLAMInfoPubSize != cloudKeyPoses6D->size())
             {
-                lio_sam::cloud_info slamInfo;
-                slamInfo.header.stamp = timeLaserInfoStamp;
-                pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
-                *cloudOut += *laserCloudCornerLastDS;
-                *cloudOut += *laserCloudSurfLastDS;
-                slamInfo.key_frame_cloud = publishCloud(ros::Publisher(), cloudOut, timeLaserInfoStamp, lidarFrame);
-                slamInfo.key_frame_poses = publishCloud(ros::Publisher(), cloudKeyPoses6D, timeLaserInfoStamp, odometryFrame);
-                pcl::PointCloud<PointType>::Ptr localMapOut(new pcl::PointCloud<PointType>());
-                *localMapOut += *laserCloudCornerFromMapDS;
-                *localMapOut += *laserCloudSurfFromMapDS;
-                slamInfo.key_frame_map = publishCloud(ros::Publisher(), localMapOut, timeLaserInfoStamp, odometryFrame);
-                pubSLAMInfo.publish(slamInfo);
-                lastSLAMInfoPubSize = cloudKeyPoses6D->size();
+                // lio_sam::cloud_info slamInfo;
+                // slamInfo.header.stamp = timeLaserInfoStamp;
+
+                // pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
+                // *cloudOut += *laserCloudCornerLastDS;
+                // *cloudOut += *laserCloudSurfLastDS;
+                // slamInfo.key_frame_cloud = publishCloud(ros::Publisher(), cloudOut, timeLaserInfoStamp, lidarFrame);
+                // slamInfo.key_frame_poses = publishCloud(ros::Publisher(), cloudKeyPoses6D, timeLaserInfoStamp, odometryFrame);
+                // pcl::PointCloud<PointType>::Ptr localMapOut(new pcl::PointCloud<PointType>());
+                // *localMapOut += *laserCloudCornerFromMapDS;
+                // *localMapOut += *laserCloudSurfFromMapDS;
+                // slamInfo.key_frame_map = publishCloud(ros::Publisher(), localMapOut, timeLaserInfoStamp, odometryFrame);
+                // pubSLAMInfo.publish(slamInfo);
+                // lastSLAMInfoPubSize = cloudKeyPoses6D->size();
+        //         ROS_INFO("[SLAMInfo] Publishing SLAM info...");
+        // ROS_INFO("[SLAMInfo] Current key pose size: %lu (last: %d)", cloudKeyPoses6D->size(), lastSLAMInfoPubSize);
+        // ROS_INFO("[SLAMInfo] Time stamp: %.9f", timeLaserInfoStamp.toSec());
+
+        lio_sam::cloud_info slamInfo;
+        slamInfo.header.stamp = timeLaserInfoStamp;
+
+        // Key frame cloud
+        pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
+        *cloudOut += *laserCloudCornerLastDS;
+        *cloudOut += *laserCloudSurfLastDS;
+        // ROS_INFO("[SLAMInfo] Key frame cloud size: %lu", cloudOut->size());
+        slamInfo.key_frame_cloud = publishCloud(ros::Publisher(), cloudOut, timeLaserInfoStamp, lidarFrame);
+
+        // Key frame poses
+        // ROS_INFO("[SLAMInfo] Key frame poses size: %lu", cloudKeyPoses6D->size());
+        slamInfo.key_frame_poses = publishCloud(ros::Publisher(), cloudKeyPoses6D, timeLaserInfoStamp, odometryFrame);
+
+        // Local map
+        pcl::PointCloud<PointType>::Ptr localMapOut(new pcl::PointCloud<PointType>());
+        *localMapOut += *laserCloudCornerFromMapDS;
+        *localMapOut += *laserCloudSurfFromMapDS;
+        // ROS_INFO("[SLAMInfo] Local map size: %lu", localMapOut->size());
+        slamInfo.key_frame_map = publishCloud(ros::Publisher(), localMapOut, timeLaserInfoStamp, odometryFrame);
+
+        // Final publish
+        pubSLAMInfo.publish(slamInfo);
+        // ROS_INFO("[SLAMInfo] SLAM info message published.");
+
+        lastSLAMInfoPubSize = cloudKeyPoses6D->size();
             }
         }
     }
