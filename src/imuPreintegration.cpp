@@ -218,6 +218,9 @@ public:
         gtsam::imuBias::ConstantBias prior_imu_bias((gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());; // assume zero initial bias
 
         priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2).finished()); // rad,rad,rad,m, m, m
+//         priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
+//   (gtsam::Vector(6) << 1e0, 1e0, 1e0, 1e0, 1e0, 1e0).finished());
+        // priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1).finished());
         priorVelNoise   = gtsam::noiseModel::Isotropic::Sigma(3, 1e4); // m/s
         priorBiasNoise  = gtsam::noiseModel::Isotropic::Sigma(6, 1e-3); // 1e-2 ~ 1e-3 seems to be good
         correctionNoise = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << 0.05, 0.05, 0.05, 0.1, 0.1, 0.1).finished()); // rad,rad,rad,m, m, m
@@ -439,9 +442,10 @@ public:
     bool failureDetection(const gtsam::Vector3& velCur, const gtsam::imuBias::ConstantBias& biasCur)
     {
         Eigen::Vector3f vel(velCur.x(), velCur.y(), velCur.z());
-        if (vel.norm() > 30)
+        if (vel.norm() > 50) // was 30 try 50
         {
-            ROS_WARN("Large velocity, reset IMU-preintegration!");
+            // ROS_WARN("Large velocity, reset IMU-preintegration!");
+            ROS_WARN_STREAM("Large velocity, reset IMU-preintegration! Velocity norm: " << vel.norm());
             return true;
         }
 
