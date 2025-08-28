@@ -34,7 +34,7 @@ struct PointXYZIRPYT
     float roll;
     float pitch;
     float yaw;
-    double time;
+    std::uint32_t time;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
 
@@ -42,7 +42,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRPYT,
                                    (float, x, x) (float, y, y)
                                    (float, z, z) (float, intensity, intensity)
                                    (float, roll, roll) (float, pitch, pitch) (float, yaw, yaw)
-                                   (double, time, time))
+                                   (std::uint32_t, time, time))
 
 typedef PointXYZIRPYT  PointTypePose;
 
@@ -272,9 +272,9 @@ public:
 
             publishFrames();
         }
-        else{
-            ROS_INFO("TIME ERROR?: %.9f", timeLaserInfoCur);
-        }
+        // else{
+        //     ROS_INFO("TIME ERROR?: %.9f", timeLaserInfoCur);
+        // }
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr& gpsMsg)
@@ -349,8 +349,7 @@ public:
 
 
 
-
-    bool saveMapService(lio_sam::save_mapRequest& req, lio_sam::save_mapResponse& res)
+bool saveMapService(lio_sam::save_mapRequest& req, lio_sam::save_mapResponse& res)
     {
       string saveMapDirectory;
 
