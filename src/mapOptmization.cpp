@@ -34,7 +34,8 @@ struct PointXYZIRPYT
     float roll;
     float pitch;
     float yaw;
-    std::uint32_t time;
+    // std::uint32_t time;
+    double time;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
 
@@ -42,9 +43,26 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRPYT,
                                    (float, x, x) (float, y, y)
                                    (float, z, z) (float, intensity, intensity)
                                    (float, roll, roll) (float, pitch, pitch) (float, yaw, yaw)
-                                   (std::uint32_t, time, time))
+                                   (double, time, time))
 
 typedef PointXYZIRPYT  PointTypePose;
+void savePointCloudASCII(const pcl::PointCloud<PointXYZIRPYT>::Ptr& cloud,
+                         const std::string& filename) {
+    std::ofstream ofs(filename);
+    ofs << std::fixed << std::setprecision(15);  // keep full precision
+
+    for (const auto& p : cloud->points) {
+        ofs << p.x << " "
+            << p.y << " "
+            << p.z << " "
+            << p.intensity << " "
+            << p.roll << " "
+            << p.pitch << " "
+            << p.yaw << " "
+            << p.time << "\n";
+    }
+    ofs.close();
+}
 
 
 class mapOptimization : public ParamServer
@@ -370,6 +388,9 @@ bool saveMapService(lio_sam::save_mapRequest& req, lio_sam::save_mapResponse& re
     pcl::io::savePCDFileBinary(saveMapDirectory + "/trajectory.pcd", *cloudKeyPoses3D);
     pcl::io::savePCDFileBinary(saveMapDirectory + "/transformations.pcd", *cloudKeyPoses6D);
     pcl::io::savePCDFileASCII(saveMapDirectory + "/transformations_ascii.pcd", *cloudKeyPoses6D);
+    savePointCloudASCII(cloudKeyPoses6D, saveMapDirectory + "/transformations_ascii2.pcd");
+
+    
 
     // extract global point cloud map
     pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
@@ -434,7 +455,11 @@ bool saveMapService(lio_sam::save_mapRequest& req, lio_sam::save_mapResponse& re
 
     // save global map with time
     int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/GlobalMap.pcd", *globalMapCloud);
+    globalMapCloud->width = globalMapCloud->points.size();
+    globalMapCloud->height = 1;
+    globalMapCloud->is_dense = false;
     pcl::io::savePCDFileASCII(saveMapDirectory + "/globalmap_ascii.pcd", *globalMapCloud);
+    // savePointCloudASCII(globalMap, savePCDDirectory + "/finalCloud_ascii.pcd");
     res.success = ret == 0;
 
     downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
