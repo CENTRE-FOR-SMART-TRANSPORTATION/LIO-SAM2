@@ -13,7 +13,7 @@ lio_sam:
   #lidarFrame: "hesai_lidar"
   baselinkFrame: "base_link"
   odometryFrame: "odom"
-  mapFrame: "map"
+  mapFrame: "map" 
 
   # GPS Settings
   useImuHeadingInitialization: true      # if using GPS data, set to "true"
@@ -42,7 +42,7 @@ lio_sam:
 
 
   imuGravity: 9.80511
-  imuRPYWeight: 0.1
+  imuRPYWeight: 1.0
   # Extrinsics: T_lb (lidar -> imu)
   extrinsicTrans: [0.0, 0.0, 0.0]
   extrinsicRot: [1, 0, 0,   
@@ -54,35 +54,23 @@ lio_sam:
 
  
 
-#  extrinsicRPY: [1,0, 0,    this originial matrix worked on the car
-#                   0,-1, 0,   
-#                   0, 0, -1] 
 
   # LOAM feature threshold --keep this
   edgeThreshold: 1.0 
   surfThreshold: 0.1
   edgeFeatureMinValidNum: 10
   surfFeatureMinValidNum: 100
-  # edgeThreshold: 0.5
-  # surfThreshold: 0.05
-  # edgeFeatureMinValidNum: 5
-  # surfFeatureMinValidNum: 50
-  # edgeThreshold: 0.5
-  # surfThreshold: 0.15
-  # edgeFeatureMinValidNum: 5
-  # surfFeatureMinValidNum: 50
+
 
   # voxel filter paprams
   odometrySurfLeafSize: 0.2                     # default: 0.4 - outdoor, 0.2 - indoor
   mappingCornerLeafSize: 0.1                    # default: 0.2 - outdoor, 0.1 - indoor
   mappingSurfLeafSize: 0.4   
-  # odometrySurfLeafSize: 0.2
-  # mappingCornerLeafSize: 0.1
-  # mappingSurfLeafSize: 0.2                   # default: 0.4 - outdoor, 0.2 - indoor
+  
 
   # robot motion constraint (in case you are using a 2D robot)
   # z_tollerance: 1000     
-  z_tollerance: 5.0                  # meters
+  z_tollerance: 1000                  # meters
   rotation_tollerance: 1000                     # radians
 
   # CPU Params
@@ -90,10 +78,7 @@ lio_sam:
   mappingProcessInterval: 0.1                 # seconds, regulate mapping frequency
 
   # Surrounding map
-  # surroundingkeyframeAddingDistThreshold:   0.25   # meters, regulate keyframe adding threshold 
-  # surroundingkeyframeAddingAngleThreshold: 0.05  # radians, regulate keyframe adding threshold
-  # surroundingKeyframeDensity: 1.0               # meters, downsample surrounding keyframe poses   
-  # surroundingKeyframeSearchRadius: 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
+         
 
   surroundingkeyframeAddingDistThreshold: 1.0   # meters, regulate keyframe adding threshold
   surroundingkeyframeAddingAngleThreshold: 0.2  # radians, regulate keyframe adding threshold
@@ -107,13 +92,7 @@ lio_sam:
   historyKeyframeSearchTimeDiff: 30.0           # seconds, key frame that is n seconds older will be considered for loop closure
   historyKeyframeSearchNum: 25                  # number of hostory key frames will be fused into a submap for loop closure
   historyKeyframeFitnessScore: 0.3              # icp threshold, the smaller the better alignment
-  # loopClosureEnableFlag: true
-  # loopClosureFrequency: 1.0
-  # surroundingKeyframeSize: 80
-  # historyKeyframeSearchRadius: 100.0
-  # historyKeyframeSearchTimeDiff: 60.0
-  # historyKeyframeSearchNum: 40
-  # historyKeyframeFitnessScore: 0.7
+  
   
   # Visualization
   globalMapVisualizationSearchRadius: 1000.0 
@@ -126,15 +105,15 @@ lio_sam:
 
 # Navsat (convert GPS coordinates to Cartesian)
 navsat:
-  frequency: 1 #50
+  frequency: 50
   wait_for_datum: false                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
   delay: 0.0
   magnetic_declination_radians: 0
   yaw_offset: 0
-  zero_altitude: true
+  zero_altitude: false
   broadcast_utm_transform: true
-  broadcast_utm_transform_as_parent_frame: true
-  publish_filtered_gps: true
+  broadcast_utm_transform_as_parent_frame: false # set to false for the pcl view point
+  publish_filtered_gps: true #  set to false?
 
 # EKF for Navsat
 ekf_gps:
